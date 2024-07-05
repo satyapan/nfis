@@ -45,7 +45,6 @@ class ms_data_mf:
     def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all'):
         return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels)
 
-
 class nfi_gen_mf:
     def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all'):
         self.data_avg = data_avg
@@ -102,7 +101,15 @@ class nfi_gen_mf:
             vis = self.data_avg[:,:,1]+self.data_avg[:,:,2]
         elif self.stokes == 'V':
             vis = -1j*(self.data_avg[:,:,1]-self.data_avg[:,:,2])
-        
+        elif self.stokes == 'XX':
+            vis = self.data_avg[:,:,0]
+        elif self.stokes == 'YY':
+            vis = self.data_avg[:,:,3]
+        elif self.stokes == 'XY':
+            vis = self.data_avg[:,:,1]
+        elif self.stokes == 'YX':
+            vis = self.data_avg[:,:,2]
+            
 #         autocorr_mask = np.zeros((self.N_bl))
 #         for i in range(self.N_bl):
 #             if self.ant1_ids[i] != self.ant2_ids[i]:
@@ -130,6 +137,14 @@ class nfi_gen_mf:
             vis = self.data_avg[:,:,1]+self.data_avg[:,:,2]
         elif self.stokes == 'V':
             vis = -1j*(self.data_avg[:,:,1]-self.data_avg[:,:,2])
+        elif self.stokes == 'XX':
+            vis = self.data_avg[:,:,0]
+        elif self.stokes == 'YY':
+            vis = self.data_avg[:,:,3]
+        elif self.stokes == 'XY':
+            vis = self.data_avg[:,:,1]
+        elif self.stokes == 'YX':
+            vis = self.data_avg[:,:,2]
             
         bar = tqdm(total=self.N_ch, position=0, leave='None') 
         img = 0
@@ -149,8 +164,7 @@ class nfi_gen_mf:
             corr = self.make_image_avg()
         else:
             corr = self.make_image()
-        return nfi_mf(corr, avg, self.x, self.y, self.z, self.freq_list)
-    
+        return nfi_mf(corr, avg, self.x, self.y, self.z, self.freq_list)    
 
 class nfi_mf:
     def __init__(self, corr, avg, x_grid, y_grid, z_val, freq_list):
@@ -172,10 +186,13 @@ class nfi_mf:
             ax.set_xlabel('X (m)')
             ax.set_ylabel('Y (m)')
             ax.set_title('Frequency = %0.2f MHz'%(self.freq_list[channel]*1e-6))
-            cb = fig.colorbar(im)
-            cb.set_label(r'Amplitude [Arbitrary]')
-            fig.tight_layout()
-            fig.savefig(fig_name+'.png', dpi=100)
+            if ax == None:
+                cb = fig.colorbar(im)
+                cb.set_label(r'Amplitude [Arbitrary]')
+                fig.tight_layout()
+                fig.savefig(fig_name+'.png', dpi=100)
+            else:
+                return im
         else:
             images = []
             for i in range(self.N_ch):

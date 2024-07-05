@@ -45,7 +45,6 @@ class ms_data:
         return nfi_gen(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, N_ch_set=N_ch_set)
 
 
-
 class nfi_gen:
     def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, N_ch_set):
         self.data_avg = data_avg
@@ -176,7 +175,6 @@ class nfi_gen:
     def get_nfi(self, apply_nan_mask=True, apply_autocorr_mask=True, N_ch_max=None, eqn_solver=None):
         nfi_gridded_list = self.leastsq_solve(apply_nan_mask=apply_nan_mask, apply_autocorr_mask=apply_autocorr_mask, N_ch_max=N_ch_max, eqn_solver=eqn_solver)
         return nfi(nfi_gridded_list, self.x_grid, self.y_grid, self.z_val, self.freq_set)
-    
 
 
 class nfi:
@@ -188,9 +186,9 @@ class nfi:
         self.freq_set = np.array(freq_set)
         self.N_set = len(freq_set)
         
-    def plot(self, ax=None, channel=0, fig_name='nfi_test', **kargs):
+    def plot(self, ax=None, channel='avg', fig_name='nfi_test', **kargs):
         X,Y = np.meshgrid(self.x_grid,self.y_grid)
-        if channel != 'all' or len(self.nfi_gridded_list)==1:
+        if type(channel) == int:
             if ax == None:
                 fig,ax = plt.subplots(figsize=(8,6))
             im = ax.pcolormesh(X,Y,self.nfi_gridded_list[channel], **kargs)
@@ -201,7 +199,21 @@ class nfi:
             cb.set_label(r'Power [$10^{-26}\,\mathrm{W/Hz}$]')
             fig.tight_layout()
             fig.savefig(fig_name+'.png', dpi=100)
-        else:
+        elif channel == 'avg':
+            if ax == None:
+                fig,ax = plt.subplots(figsize=(8,6))
+            im = ax.pcolormesh(X,Y,np.average(self.nfi_gridded_list, axis=0))
+            ax.set_xlabel('X (m)')
+            ax.set_ylabel('Y (m)')
+            ax.set_title('Averaged over frequency')
+            if ax == None:
+                cb = fig.colorbar(im)
+                cb.set_label(r'Power [$10^{-26}\,\mathrm{W/Hz}$]')    
+                fig.tight_layout()
+                fig.savefig(fig_name+'.png', dpi=100)
+            else:
+                return im
+        elif channel == 'all':
             images = []
             for i in range(self.N_set):
                 fig, ax = plt.subplots()
