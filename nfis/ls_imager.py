@@ -41,12 +41,12 @@ class ms_data:
             data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
         return data_avg
     
-    def get_nfi_gen(self, N_pix=50, dm=200, offset=(0,0,0), stokes='V', N_ch_set=1):
-        return nfi_gen(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, N_ch_set=N_ch_set)
+    def get_nfi_gen(self, N_pix=50, dm=200, offset=(0,0,0), stokes='V', N_ch_set=1, bl_cut=None):
+        return nfi_gen(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, N_ch_set=N_ch_set, bl_cut=bl_cut)
 
 
 class nfi_gen:
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, N_ch_set):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, N_ch_set, bl_cut):
         self.data_avg = data_avg
         self.N_bl = data_avg.shape[0]
         self.ant1_ids = ant1_ids
@@ -66,6 +66,16 @@ class nfi_gen:
         self.M_arr = self.get_M_arr(self.xy_grid)
         self.freq_set = None
         self.griddata = True
+        self.bl_cut = bl_cut
+        if self.bl_cut is not None:
+            self.data_avg *= self.get_bl_sel()
+
+    def get_bl_sel(self):
+        bl_sel = np.ones(self.N_bl)
+        for i in range(self.N_bl):
+            if np.sqrt((self.x_ant[self.ant1_ids[i]]-self.x_ant[self.ant2_ids[i]])**2+(self.y_ant[self.ant1_ids[i]]-self.y_ant[self.ant2_ids[i]])**2) > self.bl_cut:
+                bl_sel[i] = 0
+        return bl_sel[:,None,None]
 
     def get_phase_att(self,x,y,z,x1,y1,z1,x2,y2,z2,nu):
         dist1 = np.sqrt((x1-x)**2+(y1-y)**2+(z1-z)**2)
@@ -188,7 +198,7 @@ class nfi:
         
     def plot(self, ax=None, channel='avg', fig_name='nfi_test', **kargs):
         X,Y = np.meshgrid(self.x_grid,self.y_grid)
-        if type(channel) == int:
+        if type(channel) == int or len(self.nfi_gridded_list)==1:
             if ax == None:
                 fig,ax = plt.subplots(figsize=(8,6))
             im = ax.pcolormesh(X,Y,self.nfi_gridded_list[channel], **kargs)
@@ -231,7 +241,7 @@ class nfi:
             imageio.mimsave(fig_name+'.gif', images, fps=4)
 
 
-def eqn_solver_fun(M_arr, v_arr, lamda=1.3e-3):
+def eqn_solver_fun(M_arr, v_arr, lamda = 1.3e-3):
     M_arr_reg = np.concatenate((M_arr, lamda*np.identity(M_arr.shape[1])), axis=0)
     v_arr_reg = np.concatenate((v_arr, np.zeros(M_arr.shape[1])), axis=0)
     return sp.linalg.lstsq(M_arr_reg, v_arr_reg)[0]
