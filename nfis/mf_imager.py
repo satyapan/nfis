@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import casacore.tables as ct
 import os
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import imageio
 import numexpr as ne
 

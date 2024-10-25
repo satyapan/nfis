@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import scipy as sp
 import casacore.tables as ct
 import os
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import imageio
 
 from .funcs import *
@@ -37,8 +37,14 @@ class ms_data:
         data_reshape = data_geom.reshape(self.N_t,self.N_bl,self.N_ch,self.N_pol)
         if self.timerange == 'full':
             data_avg = np.average(data_reshape, axis=0)
-        else:    
-            data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
+        else:
+            if type(self.timerange) == tuple:
+                data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:,:], axis=0)
+            else:
+                data_avg = np.zeros((self.N_bl,self.N_ch,self.N_pol), dtype='complex')
+                for i in range(len(self.timerange)):
+                    data_avg += np.average(data_reshape[self.timerange[i][0]:self.timerange[i][1],:,:,:], axis=0)
+                data_avg = data_avg/len(self.timerange)
         return data_avg
     
     def get_nfi_gen(self, N_pix=50, dm=200, offset=(0,0,0), stokes='V', N_ch_set=1, bl_cut=None):
