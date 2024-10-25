@@ -97,3 +97,10 @@ def get_vis(x,y,z,x1,y1,z1,x2,y2,z2,I,nu):
     intensity = I/(dist1*dist2)
     phase = np.exp(-(2j)*np.pi*nu*path_diff/3.0e8)
     return intensity*phase
+
+def get_nf_phase(x,y,z,x1,y1,z1,x2,y2,z2,nu):
+    dist1 = np.sqrt((x1-x)**2+(y1-y)**2+(z1-z)**2)
+    dist2 = np.sqrt((x2-x)**2+(y2-y)**2+(z2-z)**2)
+    path_diff = dist2-dist1
+    phase = np.exp(-(2j)*np.pi*nu*path_diff/3.0e8)
+    return phase
