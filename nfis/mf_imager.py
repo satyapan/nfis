@@ -9,7 +9,7 @@ import numexpr as ne
 from .funcs import *
 
 class ms_data_mf:
-    def __init__(self, ms_file, data_col='NFI_SIM', timerange='full'):
+    def __init__(self, ms_file, data_col='NFI_SIM', timerange='full', retain_data=False):
         self.ms_file = ms_file
         self.data_col = data_col
         self.timerange = timerange
@@ -30,6 +30,8 @@ class ms_data_mf:
         self.ant2_ids = self.ant2.reshape(self.N_t,self.N_bl)[0]
         self.data_avg = self.apply_geom_timeavg(self.data)
         t.close()
+        if retain_data == False:
+            self.data = None
         
     def apply_geom_timeavg(self, data):
         w = self.uvw[:,2]

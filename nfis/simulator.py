@@ -59,7 +59,7 @@ class nf_sim:
         y = location[1]
         z = location[2]+np.average(self.z_ant)
         print('Simulating source at %s,%s,%s'%(x,y,z))
-        vis_val = get_vis(x,y,z,self.x_ant[self.ant1][:,None],self.y_ant[self.ant1][:,None],self.z_ant[self.ant1][:,None],self.x_ant[self.ant2][:,None],self.y_ant[self.ant2][:,None],self.z_ant[self.ant2][:,None],intensity,self.freq_list[None,:])
+        vis_val = get_vis(x,y,z,self.x_ant[self.ant1][:,None],self.y_ant[self.ant1][:,None],self.z_ant[self.ant1][:,None],self.x_ant[self.ant2][:,None],self.y_ant[self.ant2][:,None],self.z_ant[self.ant2][:,None],intensity[None,:],self.freq_list[None,:])
         geom_phase = np.exp(-(2j)*np.pi*self.uvw[:,2][:,None]*self.freq_list[None,:]/3.0e8)
         if self.fullpol:
             dipole_angle, dipole_direction, dipole_pattern = dipole_prop
