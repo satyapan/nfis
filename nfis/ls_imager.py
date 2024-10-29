@@ -109,13 +109,13 @@ class nfi_gen:
     
     def get_v_arr(self):
         if self.stokes == 'I':
-            v = self.data_avg[:,:,0]+self.data_avg[:,:,3]
+            v = 0.5*(self.data_avg[:,:,0]+self.data_avg[:,:,3])
         elif self.stokes == 'Q':
-            v = self.data_avg[:,:,0]-self.data_avg[:,:,3]
+            v = 0.5*(self.data_avg[:,:,0]-self.data_avg[:,:,3])
         elif self.stokes == 'U':
-            v = self.data_avg[:,:,1]+self.data_avg[:,:,2]
+            v = 0.5*(self.data_avg[:,:,1]+self.data_avg[:,:,2])
         elif self.stokes == 'V':
-            v = -1j*(self.data_avg[:,:,1]-self.data_avg[:,:,2])
+            v = -0.5*1j*(self.data_avg[:,:,1]-self.data_avg[:,:,2])
         elif self.stokes == 'XX':
             v = self.data_avg[:,:,0]
         elif self.stokes == 'YY':

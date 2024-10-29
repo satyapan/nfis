@@ -96,13 +96,13 @@ class nfi_gen_mf:
     
     def make_image(self):
         if self.stokes == 'I':
-            vis = self.data_avg[:,:,0]+self.data_avg[:,:,3]
+            vis = 0.5*(self.data_avg[:,:,0]+self.data_avg[:,:,3])
         elif self.stokes == 'Q':
-            vis = self.data_avg[:,:,0]-self.data_avg[:,:,3]
+            vis = 0.5*(self.data_avg[:,:,0]-self.data_avg[:,:,3])
         elif self.stokes == 'U':
-            vis = self.data_avg[:,:,1]+self.data_avg[:,:,2]
+            vis = 0.5*(self.data_avg[:,:,1]+self.data_avg[:,:,2])
         elif self.stokes == 'V':
-            vis = -1j*(self.data_avg[:,:,1]-self.data_avg[:,:,2])
+            vis = -0.5*1j*(self.data_avg[:,:,1]-self.data_avg[:,:,2])
         elif self.stokes == 'XX':
             vis = self.data_avg[:,:,0]
         elif self.stokes == 'YY':
