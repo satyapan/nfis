@@ -218,16 +218,19 @@ class nfi:
         elif channel == 'avg':
             if ax == None:
                 fig,ax = plt.subplots(figsize=(8,6))
-            im = ax.pcolormesh(X,Y,np.average(self.nfi_gridded_list, axis=0))
-            ax.set_xlabel('X (m)')
-            ax.set_ylabel('Y (m)')
-            ax.set_title('Averaged over frequency')
-            if ax == None:
-                cb = fig.colorbar(im)
+                im = ax.pcolormesh(X,Y,np.average(self.nfi_gridded_list, axis=0))
+                ax.set_xlabel('X (m)')
+                ax.set_ylabel('Y (m)')
+                ax.set_title('Averaged over frequency')
+                cb = fig.colorbar(im, ax=ax)
                 cb.set_label(r'Power [$10^{-26}\,\mathrm{W/Hz}$]')    
                 fig.tight_layout()
                 fig.savefig(fig_name+'.png', dpi=100)
             else:
+                im = ax.pcolormesh(X,Y,np.average(self.nfi_gridded_list, axis=0))
+                ax.set_xlabel('X (m)')
+                ax.set_ylabel('Y (m)')
+                ax.set_title('Averaged over frequency')
                 return im
         elif channel == 'all':
             images = []

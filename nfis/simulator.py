@@ -69,8 +69,8 @@ class nf_sim:
             data[:,:,2] = vis_val*geom_phase*(att_ant_y[self.ant1]*att_ant_x[self.ant2])[:,None]
             data[:,:,3] = vis_val*geom_phase*(att_ant_y[self.ant1]*att_ant_y[self.ant2])[:,None]
         else:
-            data[:,:,0] = vis_val*geom_phase/2
-            data[:,:,3] = vis_val*geom_phase/2
+            data[:,:,0] = vis_val*geom_phase
+            data[:,:,3] = vis_val*geom_phase
         return data
     
     def sim_mp(self, source_id):
