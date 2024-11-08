@@ -5,6 +5,7 @@ import casacore.tables as ct
 import os
 from tqdm import tqdm
 import imageio
+import pickle
 
 from .funcs import *
 
@@ -201,6 +202,10 @@ class nfi:
         self.z_val = z_val
         self.freq_set = np.array(freq_set)
         self.N_set = len(freq_set)
+
+    def save(self, filename):
+        with open(filename, 'wb') as outp:
+            pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
         
     def plot(self, ax=None, channel='avg', fig_name='nfi_test', **kargs):
         X,Y = np.meshgrid(self.x_grid,self.y_grid)

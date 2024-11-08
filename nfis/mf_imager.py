@@ -5,6 +5,7 @@ import os
 from tqdm import tqdm
 import imageio
 import numexpr as ne
+import pickle
 
 from .funcs import *
 
@@ -179,6 +180,10 @@ class nfi_mf:
         self.z_val = z_val
         self.freq_list = np.array(freq_list)
         self.N_ch = len(freq_list)
+    
+    def save(self, filename):
+        with open(filename, 'wb') as outp:
+            pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
         
     def plot(self, ax=None, channel=0, fig_name='nfi_test', **kargs):
         if channel != 'all' or self.avg:

@@ -5,6 +5,12 @@ import astropy.units as u
 import warnings
 import casacore.tables as ct
 import os
+import pickle
+
+def load(filename):
+    with open(filename, 'rb') as inp:
+        obj = pickle.load(inp)
+    return obj
 
 def XYZ_from_LatLonAlt(latitude, longitude, altitude):
     gps_b = 6356752.31424518
