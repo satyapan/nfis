@@ -30,7 +30,7 @@ class ms_data_mf:
             self.N_t = int(self.shape[0]/self.N_bl)
             self.ant1_ids = self.ant1.reshape(self.N_t,self.N_bl)[0]
             self.ant2_ids = self.ant2.reshape(self.N_t,self.N_bl)[0]
-            self.data_avg = self.apply_geom_timeavg(self.data, self.uvw, N_t)
+            self.data_avg = self.apply_geom_timeavg(self.data, self.uvw, self.N_t)
             t.close()
         else:
             data_list = []
