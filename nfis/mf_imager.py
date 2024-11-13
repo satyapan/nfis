@@ -14,31 +14,65 @@ class ms_data_mf:
         self.ms_file = ms_file
         self.data_col = data_col
         self.timerange = timerange
-        t = ct.table(ms_file, readonly=True)
-        self.data = t.getcol(self.data_col)
-        self.ant1 = t.getcol('ANTENNA1')
-        self.ant2 = t.getcol('ANTENNA2')
-        self.uvw = t.getcol('UVW')
-        self.shape = self.data.shape
-        self.freq_list = get_ms_freqs(self.ms_file)
-        self.N_ch = len(self.freq_list)
-        self.N_pol = self.shape[2]
-        self.ant_ids = np.array(list(set(self.ant1)))
-        self.N_ant = len(self.ant_ids)
-        self.N_bl = int((self.N_ant*(self.N_ant-1)/2)+self.N_ant)
-        self.N_t = int(self.shape[0]/self.N_bl)
-        self.ant1_ids = self.ant1.reshape(self.N_t,self.N_bl)[0]
-        self.ant2_ids = self.ant2.reshape(self.N_t,self.N_bl)[0]
-        self.data_avg = self.apply_geom_timeavg(self.data)
-        t.close()
+        if type(ms_file) != list:
+            t = ct.table(ms_file, readonly=True)
+            self.data = t.getcol(self.data_col)
+            self.ant1 = t.getcol('ANTENNA1')
+            self.ant2 = t.getcol('ANTENNA2')
+            self.uvw = t.getcol('UVW')
+            self.shape = self.data.shape
+            self.freq_list = get_ms_freqs(self.ms_file)
+            self.N_ch = len(self.freq_list)
+            self.N_pol = self.shape[2]
+            self.ant_ids = np.array(list(set(self.ant1)))
+            self.N_ant = len(self.ant_ids)
+            self.N_bl = int((self.N_ant*(self.N_ant-1)/2)+self.N_ant)
+            self.N_t = int(self.shape[0]/self.N_bl)
+            self.ant1_ids = self.ant1.reshape(self.N_t,self.N_bl)[0]
+            self.ant2_ids = self.ant2.reshape(self.N_t,self.N_bl)[0]
+            self.data_avg = self.apply_geom_timeavg(self.data, self.uvw, N_t)
+            t.close()
+        else:
+            data_list = []
+            uvw_list = []
+            data_avg_list = []
+            for i in range(len(ms_file)):
+                ms = ms_file[i]
+                t = ct.table(ms, readonly=True)
+                data = t.getcol(self.data_col)
+                data_list.append(data)
+                uvw = t.getcol('UVW')
+                uvw_list.append(uvw)
+                shape = data.shape
+                if i==0:
+                    self.ant1 = t.getcol('ANTENNA1')
+                    self.ant2 = t.getcol('ANTENNA2')
+                    self.freq_list = get_ms_freqs(ms)
+                    self.N_ch = len(self.freq_list)
+                    self.N_pol = shape[2]
+                    self.ant_ids = np.array(list(set(self.ant1)))
+                    self.N_ant = len(self.ant_ids)
+                    self.N_bl = int((self.N_ant*(self.N_ant-1)/2)+self.N_ant)
+                    N_t = int(shape[0]/self.N_bl)
+                    self.ant1_ids = self.ant1.reshape(N_t,self.N_bl)[0]
+                    self.ant2_ids = self.ant2.reshape(N_t,self.N_bl)[0]
+                N_t = int(shape[0]/self.N_bl)
+                data_avg = self.apply_geom_timeavg(data, uvw, N_t)
+                data_avg_list.append(data_avg)
+                t.close()
+            self.data = np.concatenate(data_list, axis=0)
+            self.uvw = np.concatenate(uvw_list, axis=0)
+            self.data_avg = np.average(data_avg_list, axis=0)
+            self.shape = self.data.shape
+            self.N_t = int(self.shape[0]/self.N_bl)
         if retain_data == False:
             self.data = None
         
-    def apply_geom_timeavg(self, data):
-        w = self.uvw[:,2]
+    def apply_geom_timeavg(self, data, uvw, N_t):
+        w = uvw[:,2]
         geom_phase = np.exp(2j*np.pi*w[:,None,None]*self.freq_list[None,:,None]/3.0e8)
         data_geom = data*geom_phase
-        data_reshape = data_geom.reshape(self.N_t,self.N_bl,self.N_ch,self.N_pol)
+        data_reshape = data_geom.reshape(N_t,self.N_bl,self.N_ch,self.N_pol)
         if self.timerange == 'full':
             data_avg = np.average(data_reshape, axis=0)
         else:    
@@ -56,7 +90,10 @@ class nfi_gen_mf:
         self.ant2_ids = ant2_ids
         self.freq_list = freq_list
         self.N_ch = freq_list.shape[0]
-        locs = get_ant_loc_enu(ms_file)
+        if type(ms_file) != list:
+            locs = get_ant_loc_enu(ms_file)
+        else:
+            locs = get_ant_loc_enu(ms_file[0])
         self.x_ant = locs[:,0]
         self.y_ant = locs[:,1]
         self.z_ant = locs[:,2]
