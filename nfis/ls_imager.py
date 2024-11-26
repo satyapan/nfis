@@ -82,16 +82,18 @@ class ms_data:
                 data_avg = data_avg/len(self.timerange)
         return data_avg
     
-    def get_nfi_gen(self, N_pix=50, dm=200, offset=(0,0,0), stokes='V', N_ch_set=1, bl_cut=None):
-        return nfi_gen(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, N_ch_set=N_ch_set, bl_cut=bl_cut)
+    def get_nfi_gen(self, N_pix=50, dm=200, offset=(0,0,0), stokes='V', N_ch_set=1, bl_cut=None, fullpol=False, dipole_prop=None):
+        return nfi_gen(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, N_ch_set=N_ch_set, bl_cut=bl_cut, fullpol=fullpol, dipole_prop=dipole_prop)
 
 
 class nfi_gen:
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, N_ch_set, bl_cut):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, N_ch_set, bl_cut, fullpol, dipole_prop):
         self.data_avg = data_avg
         self.N_bl = data_avg.shape[0]
         self.ant1_ids = ant1_ids
         self.ant2_ids = ant2_ids
+        self.fullpol = fullpol
+        self.dipole_prop = dipole_prop
         self.freq_list = freq_list
         self.N_ch = freq_list.shape[0]
         if type(ms_file) != list:
@@ -101,6 +103,7 @@ class nfi_gen:
         self.x_ant = locs[:,0]
         self.y_ant = locs[:,1]
         self.z_ant = locs[:,2]
+        self.N_ant = len(self.x_ant)
         self.N_pix = N_pix
         self.dm = dm
         self.stokes = stokes
@@ -140,8 +143,60 @@ class nfi_gen:
         xy_grid = np.array(xy_grid)
         return x_grid, y_grid, xy_grid, z_val
     
+    def get_leakage(self, location):
+        dipole_angle=self.dipole_prop[0]
+        dipole_direction=self.dipole_prop[1]
+        dipole_pattern=self.dipole_prop[2]
+        phi_y = -45*np.pi/180
+        phi_x = (180+45)*np.pi/180
+        y_vec = np.array([np.cos(phi_y), np.sin(phi_y)])
+        x_vec = np.array([np.cos(phi_x), np.sin(phi_x)])
+        att_ant_x = []
+        att_ant_y = []
+        for i in range(self.N_ant):
+            x_ant = self.x_ant[i]
+            y_ant = self.y_ant[i]
+            angle_ant = np.arctan2((y_ant-location[1]),(x_ant-location[0]))
+            # if dipole_angle*np.pi/180 <= angle_ant <= dipole_angle*np.pi/180+np.pi:            #Use if you want negative values based on the direction of the wavefront
+            #     wavefront = dipole_direction*np.array([np.sin(angle_ant),-np.cos(angle_ant)])
+            # else:
+            #     wavefront = -dipole_direction*np.array([np.sin(angle_ant),-np.cos(angle_ant)])
+            wavefront = dipole_direction*np.array([np.sin(angle_ant),-np.cos(angle_ant)])
+            att_x = np.dot(wavefront, x_vec)
+            att_y = np.dot(wavefront, y_vec)
+            if dipole_pattern:
+                att_x = att_x*abs(np.sin(angle_ant-dipole_angle*np.pi/180))
+                att_y = att_y*abs(np.sin(angle_ant-dipole_angle*np.pi/180))
+            att_ant_x.append(att_x)
+            att_ant_y.append(att_y)
+        return np.array(att_ant_x), np.array(att_ant_y)
+
+    def get_leakage_arr(self):
+        leakage_arr = np.ones((self.N_bl, self.N_pix**2, self.N_ch))
+        leakage_x_pix = []
+        leakage_y_pix = []
+        for i in range(self.N_pix**2):
+            location = [self.xy_grid[i][0],self.xy_grid[i][1],self.z_val]
+            att_ant_x, att_ant_y = self.get_leakage(location)
+            leakage_x_pix.append(att_ant_x)
+            leakage_y_pix.append(att_ant_y)
+        leakage_x_pix = np.array(leakage_x_pix).T
+        leakage_y_pix = np.array(leakage_y_pix).T
+        if self.stokes == 'XX':
+            leakage_arr *= leakage_x_pix[self.ant1_ids,:,None]*leakage_x_pix[self.ant2_ids,:,None]
+        elif self.stokes == 'XY':
+            leakage_arr *= leakage_x_pix[self.ant1_ids,:,None]*leakage_y_pix[self.ant2_ids,:,None]
+        elif self.stokes == 'YX':
+            leakage_arr *= leakage_y_pix[self.ant1_ids,:,None]*leakage_x_pix[self.ant2_ids,:,None]
+        elif self.stokes == 'YY':
+            leakage_arr *= leakage_y_pix[self.ant1_ids,:,None]*leakage_y_pix[self.ant2_ids,:,None]
+        return leakage_arr
+
+    
     def get_M_arr(self, xy_grid):
         M_arr = self.get_phase_att(self.xy_grid[:,0][None,:,None], self.xy_grid[:,1][None,:,None], self.z_val, self.x_ant[self.ant1_ids][:,None,None],self.y_ant[self.ant1_ids][:,None,None],self.z_ant[self.ant1_ids][:,None,None],self.x_ant[self.ant2_ids][:,None,None],self.y_ant[self.ant2_ids][:,None,None],self.z_ant[self.ant2_ids][:,None,None],self.freq_list[None,None,:])
+        if self.fullpol:
+            M_arr *= self.get_leakage_arr()
         M_arr = np.concatenate((M_arr.real,M_arr.imag), axis=0)
         return M_arr
     
