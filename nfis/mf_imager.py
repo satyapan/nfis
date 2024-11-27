@@ -226,16 +226,17 @@ class nfi_mf:
         if channel != 'all' or self.avg:
             if ax == None:
                 fig,ax = plt.subplots(figsize=(8,6))
-            im = ax.pcolormesh(self.x_grid,self.y_grid,self.corr[channel], **kargs)
-            ax.set_xlabel('X (m)')
-            ax.set_ylabel('Y (m)')
-            ax.set_title('Frequency = %0.2f MHz'%(self.freq_list[channel]*1e-6))
-            if ax == None:
+                im = ax.pcolormesh(self.x_grid,self.y_grid,self.corr[channel], **kargs)
+                ax.set_xlabel('X (m)')
+                ax.set_ylabel('Y (m)')
                 cb = fig.colorbar(im)
                 cb.set_label(r'Amplitude [Arbitrary]')
                 fig.tight_layout()
                 fig.savefig(fig_name+'.png', dpi=100)
             else:
+                im = ax.pcolormesh(self.x_grid,self.y_grid,self.corr[channel], **kargs)
+                ax.set_xlabel('X (m)')
+                ax.set_ylabel('Y (m)')
                 return im
         else:
             images = []
