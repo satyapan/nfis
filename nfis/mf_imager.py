@@ -89,7 +89,10 @@ class nfi_gen_mf:
         self.ant1_ids = ant1_ids
         self.ant2_ids = ant2_ids
         self.freq_list = freq_list
-        self.N_ch = freq_list.shape[0]
+        if channels=='all':
+            self.N_ch = freq_list.shape[0]
+        else:
+            self.N_ch = channels
         if type(ms_file) != list:
             locs = get_ant_loc_enu(ms_file)
         else:
