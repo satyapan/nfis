@@ -7,6 +7,15 @@ import multiprocessing as mp
 from .funcs import *
 
 class nf_sim:
+    """
+    Make simulator.
+
+    Arguments:
+    ms_file (str): Path to ms file where simulation is to be performed
+    data_col (str): Data column to use. If column already present, the data will be replaced. If not, a new column will be created.
+    fullpol (bool): If True, instrumental polarization effect is included in simulated data.
+    """
+
     def __init__(self, ms_file, data_col='NFI_SIM', fullpol=True):
         self.ms_file = ms_file
         self.data_col = data_col
@@ -107,6 +116,16 @@ class nf_sim:
         return sum(results)
     
     def sim_sources_ms(self, locations, intensities, dipole_props=None, maxthreads=12):
+        """
+        Simulate data.
+
+        Arguments:
+        locations (list or str): List of locations of near field sources. Each element in the list is a list of three elements with x,y,z locations. If str it refers to a text file containing the source locations, with each source in a line, and x,y,z separated by commas.
+        intensities (list): List of intensity arrays for the sources. e.g. [a1, a2, a3] where ai is an array of length N_freq with the spectral powers
+        dipole_props (list): If not None, this indicates the properties of the emitter: (dipole_angle,dipole_direction,dipole_pattern) where dipole_angle is the angle the dipole makes with the East, in deg, dipole_direction is 1 or -1, dipole_pattern is True or False based on whether to imprint a sin^2(theta) attenuation factor.
+        maxthreads (int): Maximum number of threads over which to parallelize.
+        """
+        
         data = self.sim_sources(locations, intensities, dipole_props=dipole_props, maxthreads=maxthreads)
         t = ct.table(self.ms_file, readonly=False)
         if self.data_col in t.colnames():

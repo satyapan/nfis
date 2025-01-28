@@ -10,6 +10,15 @@ import pickle
 from .funcs import *
 
 class ms_data:
+    """
+    Load visibilities.
+
+    Arguments:
+    ms_file (str or list): Path to ms, or list of multiple paths.
+    data_col (str): Data column to use  
+    timerange (str or tuple): 'full' or tuple of two integers corresponding to start and end times 
+    """
+
     def __init__(self, ms_file, data_col='DATA', timerange='full'):
         self.ms_file = ms_file
         self.data_col = data_col
@@ -87,6 +96,21 @@ class ms_data:
 
 
 class nfi_gen:
+    """
+    Make image generator.
+
+    Arguments:
+
+    N_pix (int): Number of pixels along each side
+    dm (float): Total width of grid in meter
+    offset (tuple): (x,y,z) indicating x,y,z location of the center of the image with respect to the average x,y,z values of the array layout
+    stokes (str): Stokes parameter to use. Options are 'I','Q','U','V','XX','XY','YX','YY'.
+    N_ch_set (int): Number of channels to group together to perform inversion independently.
+    bl_cut (str): Only use baseline lengths below this limit
+    fullpol (bool): If True, the instrumental polarization is accounted for in inversion
+    dipole_prop (tuple): If not None, this indicates the properties of the emitter: (dipole_angle,dipole_direction,dipole_pattern) where dipole_angle is the angle the dipole makes with the East, in deg, dipole_direction is 1 or -1, dipole_pattern is True or False based on whether to imprint a sin^2(theta) attenuation factor.
+    """
+
     def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, N_ch_set, bl_cut, fullpol, dipole_prop):
         self.data_avg = data_avg
         self.N_bl = data_avg.shape[0]
@@ -287,6 +311,17 @@ class nfi_gen:
 
 
 class nfi:
+    """
+    Make image.
+
+    Arguments:
+
+    apply_nan_mask (bool): Mask out nans
+    apply_autocorr_mask (bool): Mask out autocorrelation
+    N_ch_max (int): Maximum channel to use. If None, all channels are used
+    eqn_solver (func): The algorithm to perform inversion. Default is eqn_solver_fun which uses scipy.linalg.lstsq. Custom functions can be used instead.
+    """
+
     def __init__(self, nfi_gridded_list, x_grid, y_grid, z_val, freq_set):
         self.nfi_gridded_list = nfi_gridded_list
         self.x_grid = x_grid
@@ -300,6 +335,16 @@ class nfi:
             pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
         
     def plot(self, ax=None, channel='avg', fig_name='nfi_test', **kargs):
+        """
+        Plot image.
+
+        Arguments:
+
+        ax (obj): Axis object on which to plot. If None, a new figure and axis is created.
+        channel (str or int): 'avg' will plot frequency averaged image. Integer value will plot specified channel. 'all' will make a movie and save it as a gif file.
+        fig_name (str): Path to save the plot.
+        """
+        
         X,Y = np.meshgrid(self.x_grid,self.y_grid)
         if type(channel) == int or len(self.nfi_gridded_list)==1:
             if ax == None:

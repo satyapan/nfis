@@ -10,6 +10,16 @@ import pickle
 from .funcs import *
 
 class ms_data_mf:
+    """
+    Load visibilities.
+
+    Arguments:
+
+    ms_file (str or list): Path to ms, or list of multiple paths.
+    data_col (str): Data column to use  
+    timerange (str or tuple): 'full' or tuple of two integers corresponding to start and end times 
+    """
+
     def __init__(self, ms_file, data_col='NFI_SIM', timerange='full', retain_data=False):
         self.ms_file = ms_file
         self.data_col = data_col
@@ -83,6 +93,18 @@ class ms_data_mf:
         return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels)
 
 class nfi_gen_mf:
+    """
+    Make image generator.
+
+    Arguments:
+
+    N_pix (int): Number of pixels along each side
+    dm (float): Total width of grid in meter
+    offset (tuple): (x,y,z) indicating x,y,z location of the center of the image with respect to the average x,y,z values of the array layout
+    stokes (str): Stokes parameter to use. Options are 'I','Q','U','V','XX','XY','YX','YY'
+    channels (str or int): 'all' or integer indicating number of channels to image starting from the first
+    """
+
     def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all'):
         self.data_avg = data_avg
         self.N_bl = data_avg.shape[0]
@@ -121,15 +143,6 @@ class nfi_gen_mf:
         j2pi = 1j*2*np.pi
         phase = ne.evaluate("exp(j2pi * nu * delay)")
         return phase
-        
-#     def get_phase(self,x,y,z,x1,y1,z1,x2,y2,z2,nu):
-#         dist1 = np.sqrt((x1-x)**2+(y1-y)**2+(z1-z)**2)
-#         dist2 = np.sqrt((x2-x)**2+(y2-y)**2+(z2-z)**2)
-#         att = dist1*dist2
-#         delay = (dist2-dist1)/3.0e8
-#         j2pi = 1j*2*np.pi
-#         phase = ne.evaluate("exp(j2pi * nu * delay)*att")
-#         return phase
         
     def get_phase_grid(self):
         phase_grid = self.get_phase(self.x[None,None,:,:],self.y[None,None,:,:],self.z,self.x_ant[self.ant1_ids][:,None,None,None],self.y_ant[self.ant1_ids][:,None,None,None],self.z_ant[self.ant1_ids][:,None,None,None],self.x_ant[self.ant2_ids][:,None,None,None],self.y_ant[self.ant2_ids][:,None,None,None],self.z_ant[self.ant2_ids][:,None,None,None],self.freq_list[None,:,None,None])
@@ -210,6 +223,14 @@ class nfi_gen_mf:
         return nfi_mf(corr, avg, self.x, self.y, self.z, self.freq_list)    
 
 class nfi_mf:
+    """
+    Make image.
+
+    Arguments:
+
+    avg (bool): True for standard method with frequency averaging. False for ideal method with baseline averaging which does not work in presence of baseline dependent gains.
+    """
+
     def __init__(self, corr, avg, x_grid, y_grid, z_val, freq_list):
         self.corr = corr.real
         self.avg = avg
@@ -226,6 +247,16 @@ class nfi_mf:
             pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
         
     def plot(self, ax=None, channel=0, fig_name='nfi_test', **kargs):
+        """
+        Plot image.
+
+        Arguments:
+
+        ax (obj): Axis object on which to plot. If None, a new figure and axis is created.
+        channel (str or int): If image obj created with avg=True, this is not needed. Else 'all' would average all channels and integer would only plot specified channel.
+        fig_name (str): Path to save the plot        
+        """
+
         if channel != 'all' or self.avg:
             if ax == None:
                 fig,ax = plt.subplots(figsize=(8,6))
