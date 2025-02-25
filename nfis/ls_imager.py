@@ -181,7 +181,7 @@ class nfi_gen:
             x_ant = self.x_ant[i]
             y_ant = self.y_ant[i]
             angle_ant = np.arctan2((y_ant-location[1]),(x_ant-location[0]))
-            # if dipole_angle*np.pi/180 <= angle_ant <= dipole_angle*np.pi/180+np.pi:            #Use if you want negative values based on the direction of the wavefront
+            # if dipole_angle*np.pi/180 <= angle_ant <= dipole_angle*np.pi/180+np.pi:            #Enable negative values based on the direction of the wavefront
             #     wavefront = dipole_direction*np.array([np.sin(angle_ant),-np.cos(angle_ant)])
             # else:
             #     wavefront = -dipole_direction*np.array([np.sin(angle_ant),-np.cos(angle_ant)])
