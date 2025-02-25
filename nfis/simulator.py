@@ -37,7 +37,7 @@ class nf_sim:
         self.intensities = None
         self.dipole_props = None
 
-    def get_leakage(self, location, dipole_angle=35, dipole_direction=1, dipole_pattern=False):
+    def get_leakage(self, location, dipole_angle=0, dipole_direction=1, dipole_pattern=False):
         phi_y = -45*np.pi/180
         phi_x = (180+45)*np.pi/180
         y_vec = np.array([np.cos(phi_y), np.sin(phi_y)])
@@ -104,7 +104,10 @@ class nf_sim:
         else:
             self.intensities = [intensities for i in range(N_s)]
         if self.fullpol:
-            self.dipole_props = dipole_props
+            if dipole_props is None:
+                self.dipole_props = np.array([0,1,False])
+            else:
+                self.dipole_props = dipole_props
             if self.dipole_props.shape == (3,):
                 self.dipole_props = self.dipole_props.reshape([1,3])
         source_ids = np.arange(N_s)
