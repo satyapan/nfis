@@ -89,8 +89,8 @@ class ms_data_mf:
             data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
         return data_avg
     
-    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all'):
-        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels)
+    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None):
+        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list)
 
 class nfi_gen_mf:
     """
@@ -105,7 +105,7 @@ class nfi_gen_mf:
     channels (str or int): 'all' or integer indicating number of channels to image starting from the first
     """
 
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all'):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None):
         self.data_avg = data_avg
         self.N_bl = data_avg.shape[0]
         self.ant1_ids = ant1_ids
@@ -124,10 +124,12 @@ class nfi_gen_mf:
         self.z_ant = locs[:,2]
         self.N_pix = N_pix
         self.dm = dm
+        self.offset=offset
         self.stokes = stokes
         self.channels = channels
         self.x, self.y, self.z = self.get_xy_grid(offset)
         self.phase_grid = self.get_phase_grid()
+        self.z_list = z_list
         
     def get_xy_grid(self, offset):
         x_grid = np.linspace(-self.dm+offset[0],self.dm+offset[0],self.N_pix)
@@ -165,12 +167,7 @@ class nfi_gen_mf:
             vis = self.data_avg[:,:,1]
         elif self.stokes == 'YX':
             vis = self.data_avg[:,:,2]
-            
-#         autocorr_mask = np.zeros((self.N_bl))
-#         for i in range(self.N_bl):
-#             if self.ant1_ids[i] != self.ant2_ids[i]:
-#                 autocorr_mask[i] = 1
-        
+
         bar = tqdm(total=self.N_bl, position=0, leave='None') 
         img = 0
         for k in range(self.N_bl):
@@ -180,8 +177,6 @@ class nfi_gen_mf:
             img = ne.evaluate('img + h')
             bar.update(1)
         corr_avg = img/self.N_bl
-        #corr = vis[:,:,None,None]*self.phase_grid
-        #corr_avg = np.nanmean(corr, axis=0)
         return corr_avg
     
     def make_image_avg(self):
@@ -211,16 +206,27 @@ class nfi_gen_mf:
             img = ne.evaluate('img + h')
             bar.update(1)
         img = img/self.N_ch
-        #img = np.average(np.nan_to_num(vis[:,:,None,None])*self.phase_grid, axis=1)
         corr_blavg = np.average(abs(img), axis=0)
         return corr_blavg
     
     def get_nfi(self, avg=True):
-        if avg:
-            corr = self.make_image_avg()
+        if self.z_list is None:
+            if avg:
+                corr = self.make_image_avg()
+            else:
+                corr = self.make_image()
+            return nfi_mf(corr, avg, self.x, self.y, self.z, self.freq_list)    
         else:
-            corr = self.make_image()
-        return nfi_mf(corr, avg, self.x, self.y, self.z, self.freq_list)    
+            img_list = []
+            for z in self.z_list:
+                self.z = np.average(self.z_ant)+self.offset[2]+z
+                self.phase_grid = self.get_phase_grid()
+                if avg:
+                    img_list.append(nfi_mf(self.make_image_avg(), avg, self.x, self.y, self.z, self.freq_list))
+                else:
+                    img_list.append(nfi_mf(self.make_image(), avg, self.x, self.y, self.z, self.freq_list))
+            return img_list
+
 
 class nfi_mf:
     """
