@@ -20,7 +20,7 @@ class ms_data_mf:
     timerange (str or tuple): 'full' or tuple of two integers corresponding to start and end times 
     """
 
-    def __init__(self, ms_file, data_col='NFI_SIM', timerange='full', retain_data=False):
+    def __init__(self, ms_file, data_col='DATA', timerange='full', retain_data=False):
         self.ms_file = ms_file
         self.data_col = data_col
         self.timerange = timerange
@@ -103,6 +103,7 @@ class nfi_gen_mf:
     offset (tuple): (x,y,z) indicating x,y,z location of the center of the image with respect to the average x,y,z values of the array layout
     stokes (str): Stokes parameter to use. Options are 'I','Q','U','V','XX','XY','YX','YY'
     channels (str or int): 'all' or integer indicating number of channels to image starting from the first
+    z_list (None or list): If None, return a 2D image. If list of z values is given, return a list of 2D images at those z values.
     """
 
     def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None):
