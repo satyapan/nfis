@@ -14,9 +14,10 @@ class nf_sim:
     ms_file (str): Path to ms file where simulation is to be performed
     data_col (str): Data column to use. If column already present, the data will be replaced. If not, a new column will be created.
     fullpol (bool): If True, instrumental polarization effect is included in simulated data.
+    array_loc (list): Mean location of the array in the format [longitude (deg), latitude (deg), altitude (m)]. Default: location of NenuFAR
     """
 
-    def __init__(self, ms_file, data_col='NFI_SIM', fullpol=True):
+    def __init__(self, ms_file, data_col='NFI_SIM', fullpol=True, array_loc=[2.192400, 47.376511, 150]):
         self.ms_file = ms_file
         self.data_col = data_col
         self.fullpol = fullpol
@@ -28,7 +29,7 @@ class nf_sim:
         t.close()
         self.freq_list = get_ms_freqs(self.ms_file)
         self.N_ch = len(self.freq_list)
-        locs = get_ant_loc_enu(self.ms_file)
+        locs = get_ant_loc_enu(self.ms_file, array_loc)
         self.x_ant = locs[:,0]
         self.y_ant = locs[:,1]
         self.z_ant = locs[:,2]

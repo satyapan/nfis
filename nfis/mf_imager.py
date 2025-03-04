@@ -104,9 +104,10 @@ class nfi_gen_mf:
     stokes (str): Stokes parameter to use. Options are 'I','Q','U','V','XX','XY','YX','YY'
     channels (str or int): 'all' or integer indicating number of channels to image starting from the first
     z_list (None or list): If None, return a 2D image. If list of z values is given, return a list of 2D images at those z values.
+    array_loc (list): Mean location of the array in the format [longitude (deg), latitude (deg), altitude (m)]. Default: location of NenuFAR
     """
 
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150]):
         self.data_avg = data_avg
         self.N_bl = data_avg.shape[0]
         self.ant1_ids = ant1_ids
@@ -117,9 +118,9 @@ class nfi_gen_mf:
         else:
             self.N_ch = channels
         if type(ms_file) != list:
-            locs = get_ant_loc_enu(ms_file)
+            locs = get_ant_loc_enu(ms_file, array_loc)
         else:
-            locs = get_ant_loc_enu(ms_file[0])
+            locs = get_ant_loc_enu(ms_file[0], array_loc)
         self.x_ant = locs[:,0]
         self.y_ant = locs[:,1]
         self.z_ant = locs[:,2]

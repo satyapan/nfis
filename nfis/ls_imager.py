@@ -109,9 +109,10 @@ class nfi_gen:
     bl_cut (str): Only use baseline lengths below this limit
     fullpol (bool): If True, the instrumental polarization is accounted for in inversion
     dipole_prop (tuple): If not None, this indicates the properties of the emitter: (dipole_angle,dipole_direction,dipole_pattern) where dipole_angle is the angle the dipole makes with the East, in deg, dipole_direction is 1 or -1, dipole_pattern is True or False based on whether to imprint a sin^2(theta) attenuation factor.
+    array_loc (list): Mean location of the array in the format [longitude (deg), latitude (deg), altitude (m)]. Default: location of NenuFAR
     """
 
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, N_ch_set, bl_cut, fullpol, dipole_prop):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, N_ch_set, bl_cut, fullpol, dipole_prop, array_loc=[2.192400, 47.376511, 150]):
         self.data_avg = data_avg
         self.N_bl = data_avg.shape[0]
         self.ant1_ids = ant1_ids
@@ -121,9 +122,9 @@ class nfi_gen:
         self.freq_list = freq_list
         self.N_ch = freq_list.shape[0]
         if type(ms_file) != list:
-            locs = get_ant_loc_enu(ms_file)
+            locs = get_ant_loc_enu(ms_file, array_loc)
         else:
-            locs = get_ant_loc_enu(ms_file[0])
+            locs = get_ant_loc_enu(ms_file[0], array_loc)
         self.x_ant = locs[:,0]
         self.y_ant = locs[:,1]
         self.z_ant = locs[:,2]
@@ -344,9 +345,10 @@ class nfi:
         channel (str or int): 'avg' will plot frequency averaged image. Integer value will plot specified channel. 'all' will make a movie and save it as a gif file.
         fig_name (str): Path to save the plot.
         """
-        
+        if len(self.nfi_gridded_list)==1:
+            channel = 0
         X,Y = np.meshgrid(self.x_grid,self.y_grid)
-        if type(channel) == int or len(self.nfi_gridded_list)==1:
+        if type(channel) == int:
             if ax == None:
                 fig,ax = plt.subplots(figsize=(8,6))
             im = ax.pcolormesh(X,Y,self.nfi_gridded_list[channel], **kargs)

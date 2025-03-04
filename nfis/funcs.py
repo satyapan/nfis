@@ -84,12 +84,12 @@ def ENU_from_ECEF(xyz, latitude, longitude, altitude):
         return enu.T
     return enu
 
-def get_ant_loc_enu(ms_file):
-    nenufarcentre_geo = (np.deg2rad(2.192400), np.deg2rad(47.376511), 150)
-    nenufarcentre_xyz = geo.xyz_from_geographic(*nenufarcentre_geo)
-    nenufar_location = EarthLocation(lat=nenufarcentre_geo[1] * u.rad, lon=nenufarcentre_geo[0] * u.rad)
+def get_ant_loc_enu(ms_file, array_loc):
+    arraycentre_geo = (np.deg2rad(array_loc[0]), np.deg2rad(array_loc[1]), 150)
+    arrayalt = array_loc[2]
+    array_location = EarthLocation(lat=arraycentre_geo[1] * u.rad, lon=arraycentre_geo[0] * u.rad)
     ant_pos = ct.table(ms_file + '/ANTENNA', ack=False).getcol('POSITION')
-    return ENU_from_ECEF(ant_pos.T, nenufar_location.lat.rad, nenufar_location.lon.rad, 150).T
+    return ENU_from_ECEF(ant_pos.T, array_location.lat.rad, array_location.lon.rad, arrayalt).T
 
 def get_ms_freqs(ms_file):
     with ct.table(os.path.join(ms_file, 'SPECTRAL_WINDOW'), readonly=True, ack=False) as t_spec_win:
