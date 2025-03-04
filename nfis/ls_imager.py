@@ -91,8 +91,8 @@ class ms_data:
                 data_avg = data_avg/len(self.timerange)
         return data_avg
     
-    def get_nfi_gen(self, N_pix=50, dm=200, offset=(0,0,0), stokes='V', N_ch_set=1, bl_cut=None, fullpol=False, dipole_prop=None):
-        return nfi_gen(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, N_ch_set=N_ch_set, bl_cut=bl_cut, fullpol=fullpol, dipole_prop=dipole_prop)
+    def get_nfi_gen(self, N_pix=50, dm=200, offset=(0,0,0), stokes='V', N_ch_set=1, bl_cut=None, fullpol=False, dipole_prop=None, array_loc=[2.192400, 47.376511, 150]):
+        return nfi_gen(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, N_ch_set=N_ch_set, bl_cut=bl_cut, fullpol=fullpol, dipole_prop=dipole_prop, array_loc=array_loc)
 
 
 class nfi_gen:

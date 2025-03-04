@@ -89,8 +89,8 @@ class ms_data_mf:
             data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
         return data_avg
     
-    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None):
-        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list)
+    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150]):
+        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc)
 
 class nfi_gen_mf:
     """
