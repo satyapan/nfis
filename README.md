@@ -1,6 +1,6 @@
 # Near field imager and simulator for radio interferometers
 
-nfis is a Python-based tool for performing near field imaging and simulations on radio interferometric measurement sets. The imaging and simulation algorithms are described in Munshi et al. 2025 (in prep).
+nfis is a Python-based tool for performing near field imaging and simulations on radio interferometric measurement sets. The imaging and simulation algorithms are described by [Munshi et al. 2025](https://arxiv.org/abs/2503.21728).
 
 # Dependencies
 nfis requires the following python libraries: 
