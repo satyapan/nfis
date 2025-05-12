@@ -264,16 +264,16 @@ class nfi_gen_mf:
                 corr = self.make_image_avg()
             else:
                 corr = self.make_image()
-            return nfi_mf(corr, avg, self.x, self.y, self.z, self.freq_list, self.img_ateam)
+            return nfi_mf(corr, avg, self.x, self.y, self.z, self.freq_list, self.img_ateam, self.sim_ateam)
         else:
             img_list = []
             for z in self.z_list:
                 self.z = np.average(self.z_ant)+self.offset[2]+z
                 self.phase_grid = self.get_phase_grid()
                 if avg:
-                    img_list.append(nfi_mf(self.make_image_avg(), avg, self.x, self.y, self.z, self.freq_list, self.img_ateam))
+                    img_list.append(nfi_mf(self.make_image_avg(), avg, self.x, self.y, self.z, self.freq_list, self.img_ateam, self.sim_ateam))
                 else:
-                    img_list.append(nfi_mf(self.make_image(), avg, self.x, self.y, self.z, self.freq_list, self.img_ateam))
+                    img_list.append(nfi_mf(self.make_image(), avg, self.x, self.y, self.z, self.freq_list, self.img_ateam, self.sim_ateam))
             return img_list
 
 
@@ -286,7 +286,7 @@ class nfi_mf:
     avg (bool): True for standard method with frequency averaging. False for ideal method with baseline averaging which does not work in presence of baseline dependent gains.
     """
 
-    def __init__(self, corr, avg, x_grid, y_grid, z_val, freq_list, img_ateam):
+    def __init__(self, corr, avg, x_grid, y_grid, z_val, freq_list, img_ateam, sim_ateam):
         self.corr = corr.real
         self.avg = avg
         if avg:
@@ -297,6 +297,7 @@ class nfi_mf:
         self.freq_list = np.array(freq_list)
         self.N_ch = len(freq_list)
         self.img_ateam = img_ateam
+        self.sim_ateam = sim_ateam
     
     def save(self, filename):
         with open(filename, 'wb') as outp:
@@ -318,8 +319,13 @@ class nfi_mf:
                 fig,ax = plt.subplots(figsize=(8,6))
                 im = ax.pcolormesh(self.x_grid,self.y_grid,self.corr[channel], **kargs)
                 if self.img_ateam is not None:
-                    for ateam in self.img_ateam:
+                    for i in range(len(self.img_ateam)):
+                        ateam = self.img_ateam[i]
                         ax.contour(self.x_grid,self.y_grid,ateam/np.amax(ateam),np.arange(0.8, 1, 0.04),colors='black')
+                        x, y = np.where(ateam == ateam.max())
+                        x_val = self.x_grid[x[0],y[0]]
+                        y_val = self.y_grid[x[0],y[0]]
+                        ax.annotate(self.sim_ateam[i], [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5))
                 ax.set_xlabel('X (m)')
                 ax.set_ylabel('Y (m)')
                 cb = fig.colorbar(im)
@@ -329,8 +335,13 @@ class nfi_mf:
             else:
                 im = ax.pcolormesh(self.x_grid,self.y_grid,self.corr[channel], **kargs)
                 if self.img_ateam is not None:
-                    for ateam in self.img_ateam:
+                    for i in range(len(self.img_ateam)):
+                        ateam = self.img_ateam[i]
                         ax.contour(self.x_grid,self.y_grid,ateam/np.amax(ateam),np.arange(0.8, 1, 0.04),colors='black')
+                        x, y = np.where(ateam == ateam.max())
+                        x_val = self.x_grid[x[0],y[0]]
+                        y_val = self.y_grid[x[0],y[0]]
+                        ax.annotate(self.sim_ateam[i], [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5))
                 ax.set_xlabel('X (m)')
                 ax.set_ylabel('Y (m)')
                 return im
