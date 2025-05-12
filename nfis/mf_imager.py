@@ -6,6 +6,7 @@ from tqdm import tqdm
 import imageio
 import numexpr as ne
 import pickle
+import astropy.time as atime
 
 from .funcs import *
 
@@ -89,8 +90,8 @@ class ms_data_mf:
             data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
         return data_avg
     
-    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150]):
-        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc)
+    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None):
+        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc, sim_ateam=sim_ateam)
 
 class nfi_gen_mf:
     """
@@ -105,9 +106,11 @@ class nfi_gen_mf:
     channels (str or int): 'all' or integer indicating number of channels to image starting from the first
     z_list (None or list): If None, return a 2D image. If list of z values is given, return a list of 2D images at those z values.
     array_loc (list): Mean location of the array in the format [longitude (deg), latitude (deg), altitude (m)]. Default: location of NenuFAR
+    sim_ateam (list, optional): A list containing strings of names of sky sources to simulate and image.
     """
 
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150]):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None):
+        self.ms_file = ms_file
         self.data_avg = data_avg
         self.N_bl = data_avg.shape[0]
         self.ant1_ids = ant1_ids
@@ -132,6 +135,9 @@ class nfi_gen_mf:
         self.x, self.y, self.z = self.get_xy_grid(offset)
         self.phase_grid = self.get_phase_grid()
         self.z_list = z_list
+        self.array_loc = array_loc
+        self.sim_ateam = sim_ateam
+        self.img_ateam = None
         
     def get_xy_grid(self, offset):
         x_grid = np.linspace(-self.dm+offset[0],self.dm+offset[0],self.N_pix)
@@ -148,6 +154,18 @@ class nfi_gen_mf:
         phase = ne.evaluate("exp(j2pi * nu * delay)")
         return phase
         
+    def get_phase_ff(self,altaz,x1,y1,z1,x2,y2,z2,nu):
+
+        if altaz.alt < 0:
+            print('Source is below horizon!')
+        else:
+            enu = np.array([np.cos(altaz.alt) * np.sin(altaz.az), np.cos(altaz.alt) * np.cos(altaz.az),np.sin(altaz.alt)])
+            bl = np.array([x2-x1,y2-y1,z2-z1])
+            delay = np.sum(enu[:,None,None]*bl, axis=0)/3.0e8
+            j2pi = 1j*2*np.pi
+            phase = ne.evaluate("exp(j2pi * nu * delay)")
+            return phase
+    
     def get_phase_grid(self):
         phase_grid = self.get_phase(self.x[None,None,:,:],self.y[None,None,:,:],self.z,self.x_ant[self.ant1_ids][:,None,None,None],self.y_ant[self.ant1_ids][:,None,None,None],self.z_ant[self.ant1_ids][:,None,None,None],self.x_ant[self.ant2_ids][:,None,None,None],self.y_ant[self.ant2_ids][:,None,None,None],self.z_ant[self.ant2_ids][:,None,None,None],self.freq_list[None,:,None,None])
         return phase_grid
@@ -211,22 +229,51 @@ class nfi_gen_mf:
         corr_blavg = np.average(abs(img), axis=0)
         return corr_blavg
     
+    def make_image_ateam(self):
+        t = ct.table(self.ms_file, readonly=True)
+        time = atime.Time(np.average(t.getcol('TIME')) / 3600. / 24., format='mjd')
+        nenufar_location = EarthLocation(lat=self.array_loc[1] * u.deg, lon=self.array_loc[0] * u.deg, height=self.array_loc[2] * u.m)
+        source_coords = [SkyCoord.from_name(i) for i in self.sim_ateam]
+        img_ateam = []
+        for i in range(len(source_coords)):
+            source_coord = source_coords[i]
+            altaz = source_coord.transform_to(AltAz(obstime=time, location=nenufar_location))
+            print(altaz)
+            if altaz.alt.deg > 10:
+                vis = self.get_phase_ff(altaz,self.x_ant[self.ant1_ids][:,None],self.y_ant[self.ant1_ids][:,None],self.z_ant[self.ant1_ids][:,None],self.x_ant[self.ant2_ids][:,None],self.y_ant[self.ant2_ids][:,None],self.z_ant[self.ant2_ids][:,None],self.freq_list[None,:])
+                vis = vis[:,:,None,None]
+                print('Simulating %s'%(self.sim_ateam[i]))
+                bar = tqdm(total=self.N_ch, position=0, leave='None') 
+                img = 0
+                for k in range(self.N_ch):
+                    v = vis[:,k,:,:]
+                    p = self.phase_grid[:,k,:,:]
+                    h = ne.evaluate('v * p')
+                    img = ne.evaluate('img + h')
+                    bar.update(1)
+                bar.close()
+                img = img/self.N_ch
+                img_ateam.append(np.average(abs(img), axis=0))
+        return img_ateam
+    
     def get_nfi(self, avg=True):
+        if self.sim_ateam != None:
+            self.img_ateam = self.make_image_ateam()
         if self.z_list is None:
             if avg:
                 corr = self.make_image_avg()
             else:
                 corr = self.make_image()
-            return nfi_mf(corr, avg, self.x, self.y, self.z, self.freq_list)    
+            return nfi_mf(corr, avg, self.x, self.y, self.z, self.freq_list, self.img_ateam)
         else:
             img_list = []
             for z in self.z_list:
                 self.z = np.average(self.z_ant)+self.offset[2]+z
                 self.phase_grid = self.get_phase_grid()
                 if avg:
-                    img_list.append(nfi_mf(self.make_image_avg(), avg, self.x, self.y, self.z, self.freq_list))
+                    img_list.append(nfi_mf(self.make_image_avg(), avg, self.x, self.y, self.z, self.freq_list, self.img_ateam))
                 else:
-                    img_list.append(nfi_mf(self.make_image(), avg, self.x, self.y, self.z, self.freq_list))
+                    img_list.append(nfi_mf(self.make_image(), avg, self.x, self.y, self.z, self.freq_list, self.img_ateam))
             return img_list
 
 
@@ -239,7 +286,7 @@ class nfi_mf:
     avg (bool): True for standard method with frequency averaging. False for ideal method with baseline averaging which does not work in presence of baseline dependent gains.
     """
 
-    def __init__(self, corr, avg, x_grid, y_grid, z_val, freq_list):
+    def __init__(self, corr, avg, x_grid, y_grid, z_val, freq_list, img_ateam):
         self.corr = corr.real
         self.avg = avg
         if avg:
@@ -249,6 +296,7 @@ class nfi_mf:
         self.z_val = z_val
         self.freq_list = np.array(freq_list)
         self.N_ch = len(freq_list)
+        self.img_ateam = img_ateam
     
     def save(self, filename):
         with open(filename, 'wb') as outp:
@@ -269,6 +317,9 @@ class nfi_mf:
             if ax == None:
                 fig,ax = plt.subplots(figsize=(8,6))
                 im = ax.pcolormesh(self.x_grid,self.y_grid,self.corr[channel], **kargs)
+                if self.img_ateam is not None:
+                    for ateam in self.img_ateam:
+                        ax.contour(self.x_grid,self.y_grid,ateam/np.amax(ateam),np.arange(0.8, 1, 0.04),colors='black')
                 ax.set_xlabel('X (m)')
                 ax.set_ylabel('Y (m)')
                 cb = fig.colorbar(im)
@@ -277,6 +328,9 @@ class nfi_mf:
                 fig.savefig(fig_name+'.png', dpi=100)
             else:
                 im = ax.pcolormesh(self.x_grid,self.y_grid,self.corr[channel], **kargs)
+                if self.img_ateam is not None:
+                    for ateam in self.img_ateam:
+                        ax.contour(self.x_grid,self.y_grid,ateam/np.amax(ateam),np.arange(0.8, 1, 0.04),colors='black')
                 ax.set_xlabel('X (m)')
                 ax.set_ylabel('Y (m)')
                 return im
