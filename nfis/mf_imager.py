@@ -235,11 +235,13 @@ class nfi_gen_mf:
         nenufar_location = EarthLocation(lat=self.array_loc[1] * u.deg, lon=self.array_loc[0] * u.deg, height=self.array_loc[2] * u.m)
         source_coords = [SkyCoord.from_name(i) for i in self.sim_ateam]
         img_ateam = []
+        sim_ateam_abovehor = []
         for i in range(len(source_coords)):
             source_coord = source_coords[i]
             altaz = source_coord.transform_to(AltAz(obstime=time, location=nenufar_location))
             print(altaz)
             if altaz.alt.deg > 10:
+                sim_ateam_abovehor.append(self.sim_ateam[i])
                 vis = self.get_phase_ff(altaz,self.x_ant[self.ant1_ids][:,None],self.y_ant[self.ant1_ids][:,None],self.z_ant[self.ant1_ids][:,None],self.x_ant[self.ant2_ids][:,None],self.y_ant[self.ant2_ids][:,None],self.z_ant[self.ant2_ids][:,None],self.freq_list[None,:])
                 vis = vis[:,:,None,None]
                 print('Simulating %s'%(self.sim_ateam[i]))
@@ -254,6 +256,7 @@ class nfi_gen_mf:
                 bar.close()
                 img = img/self.N_ch
                 img_ateam.append(np.average(abs(img), axis=0))
+        self.sim_ateam = sim_ateam_abovehor
         return img_ateam
     
     def get_nfi(self, avg=True):
