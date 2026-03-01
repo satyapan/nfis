@@ -84,11 +84,13 @@ def ENU_from_ECEF(xyz, latitude, longitude, altitude):
         return enu.T
     return enu
 
-def get_ant_loc_enu(ms_file, array_loc):
-    arraycentre_geo = (np.deg2rad(array_loc[0]), np.deg2rad(array_loc[1]), 150)
+def get_ant_loc_enu(ms_file, array_loc, mwa_ms=False):
+    arraycentre_geo = (np.deg2rad(array_loc[0]), np.deg2rad(array_loc[1]), array_loc[2])
     arrayalt = array_loc[2]
     array_location = EarthLocation(lat=arraycentre_geo[1] * u.rad, lon=arraycentre_geo[0] * u.rad)
     ant_pos = ct.table(ms_file + '/ANTENNA', ack=False).getcol('POSITION')
+    if mwa_ms:
+        ant_pos = ant_pos[1:,:]
     return ENU_from_ECEF(ant_pos.T, array_location.lat.rad, array_location.lon.rad, arrayalt).T
 
 def get_ms_freqs(ms_file):

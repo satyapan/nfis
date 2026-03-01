@@ -90,8 +90,8 @@ class ms_data_mf:
             data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
         return data_avg
     
-    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None):
-        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc, sim_ateam=sim_ateam)
+    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False):
+        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc, sim_ateam=sim_ateam, mwa_ms=mwa_ms)
 
 class nfi_gen_mf:
     """
@@ -109,21 +109,22 @@ class nfi_gen_mf:
     sim_ateam (list, optional): A list containing strings of names of sky sources to simulate and image.
     """
 
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False):
         self.ms_file = ms_file
-        self.data_avg = data_avg
+        if isinstance(channels, str) and channels=='all':
+            self.channels = np.arange(len(freq_list))
+        else:
+            self.channels = channels
+        self.freq_list = freq_list[channels]
+        self.data_avg = data_avg[:,self.channels,:]
         self.N_bl = data_avg.shape[0]
-        self.ant1_ids = ant1_ids
-        self.ant2_ids = ant2_ids
-        self.freq_list = freq_list
-        if channels=='all':
-            self.N_ch = freq_list.shape[0]
-        else:
-            self.N_ch = channels
+        self.ant1_ids = ant1_ids - mwa_ms*1
+        self.ant2_ids = ant2_ids - mwa_ms*1
+        self.N_ch = len(channels)
         if type(ms_file) != list:
-            locs = get_ant_loc_enu(ms_file, array_loc)
+            locs = get_ant_loc_enu(ms_file, array_loc, mwa_ms=mwa_ms)
         else:
-            locs = get_ant_loc_enu(ms_file[0], array_loc)
+            locs = get_ant_loc_enu(ms_file[0], array_loc, mwa_ms=mwa_ms)
         self.x_ant = locs[:,0]
         self.y_ant = locs[:,1]
         self.z_ant = locs[:,2]
@@ -131,7 +132,6 @@ class nfi_gen_mf:
         self.dm = dm
         self.offset=offset
         self.stokes = stokes
-        self.channels = channels
         self.x, self.y, self.z = self.get_xy_grid(offset)
         self.phase_grid = self.get_phase_grid()
         self.z_list = z_list
