@@ -115,12 +115,12 @@ class nfi_gen_mf:
             self.channels = np.arange(len(freq_list))
         else:
             self.channels = channels
-        self.freq_list = freq_list[channels]
+        self.freq_list = freq_list[self.channels]
         self.data_avg = data_avg[:,self.channels,:]
         self.N_bl = data_avg.shape[0]
         self.ant1_ids = ant1_ids - mwa_ms*1
         self.ant2_ids = ant2_ids - mwa_ms*1
-        self.N_ch = len(channels)
+        self.N_ch = len(self.channels)
         if type(ms_file) != list:
             locs = get_ant_loc_enu(ms_file, array_loc, mwa_ms=mwa_ms)
         else:
@@ -155,7 +155,6 @@ class nfi_gen_mf:
         return phase
         
     def get_phase_ff(self,altaz,x1,y1,z1,x2,y2,z2,nu):
-
         if altaz.alt < 0:
             print('Source is below horizon!')
         else:
