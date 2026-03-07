@@ -17,30 +17,32 @@ class nf_sim:
     array_loc (list): Mean location of the array in the format [longitude (deg), latitude (deg), altitude (m)]. Default: location of NenuFAR
     """
 
-    def __init__(self, ms_file, data_col='NFI_SIM', fullpol=True, array_loc=[2.192400, 47.376511, 150]):
+    def __init__(self, ms_file, data_col='NFI_SIM', fullpol=True, array_loc=[2.192400, 47.376511, 150], mwa_ms=False, phi_x=(180+45)*np.pi/180, phi_y=-45*np.pi/180):
         self.ms_file = ms_file
         self.data_col = data_col
         self.fullpol = fullpol
         t = ct.table(self.ms_file, readonly=True)
-        self.ant1 = t.getcol('ANTENNA1')
-        self.ant2 = t.getcol('ANTENNA2')
+        self.ant1 = t.getcol('ANTENNA1') - mwa_ms*1
+        self.ant2 = t.getcol('ANTENNA2') - mwa_ms*1
         self.shape = t.getcol('DATA').shape
         self.uvw = t.getcol('UVW')
         t.close()
         self.freq_list = get_ms_freqs(self.ms_file)
         self.N_ch = len(self.freq_list)
-        locs = get_ant_loc_enu(self.ms_file, array_loc)
+        locs = get_ant_loc_enu(self.ms_file, array_loc, mwa_ms=mwa_ms)
         self.x_ant = locs[:,0]
         self.y_ant = locs[:,1]
         self.z_ant = locs[:,2]
         self.N_ant = len(self.x_ant)
+        self.phi_x = phi_x
+        self.phi_y = phi_y
         self.locations = None
         self.intensities = None
         self.dipole_props = None
 
     def get_leakage(self, location, dipole_angle=0, dipole_direction=1, dipole_pattern=False):
-        phi_y = -45*np.pi/180
-        phi_x = (180+45)*np.pi/180
+        phi_x = self.phi_x
+        phi_y = self.phi_y
         y_vec = np.array([np.cos(phi_y), np.sin(phi_y)])
         x_vec = np.array([np.cos(phi_x), np.sin(phi_x)])
         att_ant_x = []
