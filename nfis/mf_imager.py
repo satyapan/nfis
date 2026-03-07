@@ -90,8 +90,8 @@ class ms_data_mf:
             data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
         return data_avg
     
-    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False):
-        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc, sim_ateam=sim_ateam, mwa_ms=mwa_ms)
+    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False):
+        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc, sim_ateam=sim_ateam, mwa_ms=mwa_ms, mask_autocorr=mask_autocorr)
 
 class nfi_gen_mf:
     """
@@ -107,9 +107,10 @@ class nfi_gen_mf:
     z_list (None or list): If None, return a 2D image. If list of z values is given, return a list of 2D images at those z values.
     array_loc (list): Mean location of the array in the format [longitude (deg), latitude (deg), altitude (m)]. Default: location of NenuFAR
     sim_ateam (list, optional): A list containing strings of names of sky sources to simulate and image.
+    mask_autocorr (bool): Whether to mask autocorrelations.
     """
 
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False):
         self.ms_file = ms_file
         if isinstance(channels, str) and channels=='all':
             self.channels = np.arange(len(freq_list))
@@ -120,6 +121,12 @@ class nfi_gen_mf:
         self.N_bl = data_avg.shape[0]
         self.ant1_ids = ant1_ids - mwa_ms*1
         self.ant2_ids = ant2_ids - mwa_ms*1
+        if mask_autocorr:
+            autocorr_mask = np.zeros((self.N_bl))
+            for i in range(self.N_bl):
+                if self.ant1_ids[i] != self.ant2_ids[i]:
+                    autocorr_mask[i] = 1
+            self.data_avg = self.data_avg*autocorr_mask[:,None,None]
         self.N_ch = len(self.channels)
         if type(ms_file) != list:
             locs = get_ant_loc_enu(ms_file, array_loc, mwa_ms=mwa_ms)
