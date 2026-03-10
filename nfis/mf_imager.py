@@ -239,7 +239,7 @@ class nfi_gen_mf:
         t = ct.table(self.ms_file, readonly=True)
         time = atime.Time(np.average(t.getcol('TIME')) / 3600. / 24., format='mjd')
         nenufar_location = EarthLocation(lat=self.array_loc[1] * u.deg, lon=self.array_loc[0] * u.deg, height=self.array_loc[2] * u.m)
-        source_coords = [SkyCoord.from_name(i) for i in self.sim_ateam]
+        source_coords = [SkyCoord.from_name(i) if isinstance(i, str) else i for i in self.sim_ateam]
         img_ateam = []
         sim_ateam_abovehor = []
         for i in range(len(source_coords)):
@@ -334,7 +334,8 @@ class nfi_mf:
                         x, y = np.where(ateam == ateam.max())
                         x_val = self.x_grid[x[0],y[0]]
                         y_val = self.y_grid[x[0],y[0]]
-                        ax.annotate(self.sim_ateam[i], [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5))
+                        label = self.sim_ateam[i] if isinstance(self.sim_ateam[i], str) else self.sim_ateam[i].info.name
+                        ax.annotate(label, [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5))
                 ax.set_xlabel('X (m)')
                 ax.set_ylabel('Y (m)')
                 cb = fig.colorbar(im)
@@ -350,7 +351,8 @@ class nfi_mf:
                         x, y = np.where(ateam == ateam.max())
                         x_val = self.x_grid[x[0],y[0]]
                         y_val = self.y_grid[x[0],y[0]]
-                        ax.annotate(self.sim_ateam[i], [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5))
+                        label = self.sim_ateam[i] if isinstance(self.sim_ateam[i], str) else self.sim_ateam[i].info.name
+                        ax.annotate(label, [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5))
                 ax.set_xlabel('X (m)')
                 ax.set_ylabel('Y (m)')
                 return im
