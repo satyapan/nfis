@@ -90,8 +90,8 @@ class ms_data_mf:
             data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
         return data_avg
     
-    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False):
-        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc, sim_ateam=sim_ateam, mwa_ms=mwa_ms, mask_autocorr=mask_autocorr)
+    def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False, sign_convention=1):
+        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc, sim_ateam=sim_ateam, mwa_ms=mwa_ms, mask_autocorr=mask_autocorr, sign_convention=sign_convention)
 
 class nfi_gen_mf:
     """
@@ -110,7 +110,7 @@ class nfi_gen_mf:
     mask_autocorr (bool): Whether to mask autocorrelations.
     """
 
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False, sign_convention=1):
         self.ms_file = ms_file
         if isinstance(channels, str) and channels=='all':
             self.channels = np.arange(len(freq_list))
@@ -140,6 +140,7 @@ class nfi_gen_mf:
         self.offset=offset
         self.stokes = stokes
         self.x, self.y, self.z = self.get_xy_grid(offset)
+        self.sign_convention = sign_convention
         self.phase_grid = self.get_phase_grid()
         self.z_list = z_list
         self.array_loc = array_loc
@@ -157,7 +158,7 @@ class nfi_gen_mf:
         dist1 = np.sqrt((x1-x)**2+(y1-y)**2+(z1-z)**2)
         dist2 = np.sqrt((x2-x)**2+(y2-y)**2+(z2-z)**2)
         delay = (dist2-dist1)/3.0e8
-        j2pi = 1j*2*np.pi
+        j2pi = self.sign_convention * 1j * 2 * np.pi
         phase = ne.evaluate("exp(j2pi * nu * delay)")
         return phase
         
@@ -168,7 +169,7 @@ class nfi_gen_mf:
             enu = np.array([np.cos(altaz.alt) * np.sin(altaz.az), np.cos(altaz.alt) * np.cos(altaz.az),np.sin(altaz.alt)])
             bl = np.array([x2-x1,y2-y1,z2-z1])
             delay = np.sum(enu[:,None,None]*bl, axis=0)/3.0e8
-            j2pi = 1j*2*np.pi
+            j2pi = self.sign_convention * 1j * 2 * np.pi
             phase = ne.evaluate("exp(j2pi * nu * delay)")
             return phase
     
