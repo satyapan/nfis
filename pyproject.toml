@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "nfis"
+version = "0.1.5"
+description = "Near field imager and simulator for radio interferometers"
+authors = ["satyapan <satyapan.iiserm@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+numpy = "*"
+matplotlib = "*"
+scipy = "*"
+astropy = "*"
+python-casacore = "*"
+tqdm = "*"
+imageio = "*"
+numexpr = "*"
+lofarantpos = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
