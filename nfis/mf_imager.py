@@ -85,9 +85,9 @@ class ms_data_mf:
         data_geom = data*geom_phase
         data_reshape = data_geom.reshape(N_t,self.N_bl,self.N_ch,self.N_pol)
         if self.timerange == 'full':
-            data_avg = np.average(data_reshape, axis=0)
+            data_avg = np.nanmean(data_reshape, axis=0)
         else:    
-            data_avg = np.average(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
+            data_avg = np.nanmean(data_reshape[self.timerange[0]:self.timerange[1],:,:], axis=0)
         return data_avg
     
     def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False, sign_convention=1):
