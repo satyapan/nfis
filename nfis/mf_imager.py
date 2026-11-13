@@ -267,9 +267,9 @@ class nfi_gen_mf:
         return img_ateam
     
     def get_nfi(self, avg=True):
-        if self.sim_ateam != None:
-            self.img_ateam = self.make_image_ateam()
         if self.z_list is None:
+            if self.sim_ateam != None:
+                self.img_ateam = self.make_image_ateam()
             if avg:
                 corr = self.make_image_avg()
             else:
@@ -280,6 +280,8 @@ class nfi_gen_mf:
             for z in self.z_list:
                 self.z = np.average(self.z_ant)+self.offset[2]+z
                 self.phase_grid = self.get_phase_grid()
+                if self.sim_ateam != None:
+                    self.img_ateam = self.make_image_ateam()
                 if avg:
                     img_list.append(nfi_mf(self.make_image_avg(), avg, self.x, self.y, self.z, self.freq_list, self.img_ateam, self.sim_ateam))
                 else:
