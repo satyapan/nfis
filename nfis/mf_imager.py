@@ -265,7 +265,7 @@ class nfi_gen_mf:
                 img_ateam.append(np.average(abs(img), axis=0))
         self.sim_ateam = sim_ateam_abovehor
         return img_ateam
-    
+
     def get_nfi(self, avg=True):
         if self.z_list is None:
             if self.sim_ateam != None:
@@ -315,7 +315,7 @@ class nfi_mf:
         with open(filename, 'wb') as outp:
             pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
         
-    def plot(self, ax=None, channel=0, fig_name='nfi_test', **kargs):
+    def plot(self, ax=None, channel=0, fig_name='nfi_test', contour_range=(0.7, 1.0), **kargs):
         """
         Plot image.
 
@@ -323,6 +323,7 @@ class nfi_mf:
 
         ax (obj): Axis object on which to plot. If None, a new figure and axis is created.
         channel (str or int): If image obj created with avg=True, this is not needed. Else 'all' would average all channels and integer would only plot specified channel.
+        contour_range (tuple): The range of values to use for the contour levels.
         fig_name (str): Path to save the plot        
         """
 
@@ -333,12 +334,12 @@ class nfi_mf:
                 if self.img_ateam is not None:
                     for i in range(len(self.img_ateam)):
                         ateam = self.img_ateam[i]
-                        ax.contour(self.x_grid,self.y_grid,ateam/np.amax(ateam),np.arange(0.8, 1, 0.04),colors='black')
+                        ax.contour(self.x_grid,self.y_grid,ateam/np.amax(ateam),np.linspace(contour_range[0], contour_range[1], 4)[:-1],colors='grey', alpha=0.7)
                         x, y = np.where(ateam == ateam.max())
                         x_val = self.x_grid[x[0],y[0]]
                         y_val = self.y_grid[x[0],y[0]]
                         label = self.sim_ateam[i] if isinstance(self.sim_ateam[i], str) else self.sim_ateam[i].info.name
-                        ax.annotate(label, [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5))
+                        ax.annotate(label, [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
                 ax.set_xlabel('X (m)')
                 ax.set_ylabel('Y (m)')
                 cb = fig.colorbar(im)
@@ -350,12 +351,12 @@ class nfi_mf:
                 if self.img_ateam is not None:
                     for i in range(len(self.img_ateam)):
                         ateam = self.img_ateam[i]
-                        ax.contour(self.x_grid,self.y_grid,ateam/np.amax(ateam),np.arange(0.8, 1, 0.04),colors='black')
+                        ax.contour(self.x_grid,self.y_grid,ateam/np.amax(ateam),np.linspace(contour_range[0], contour_range[1], 4)[:-1], colors='grey', alpha=0.7)
                         x, y = np.where(ateam == ateam.max())
                         x_val = self.x_grid[x[0],y[0]]
                         y_val = self.y_grid[x[0],y[0]]
                         label = self.sim_ateam[i] if isinstance(self.sim_ateam[i], str) else self.sim_ateam[i].info.name
-                        ax.annotate(label, [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5))
+                        ax.annotate(label, [x_val, y_val], xycoords='data', bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
                 ax.set_xlabel('X (m)')
                 ax.set_ylabel('Y (m)')
                 return im
