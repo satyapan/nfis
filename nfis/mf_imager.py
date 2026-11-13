@@ -91,7 +91,7 @@ class ms_data_mf:
         return data_avg
     
     def get_nfi_gen(self, N_pix=100, dm=300, offset=(0,0,0), stokes='V', channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False, sign_convention=1):
-        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc, sim_ateam=sim_ateam, mwa_ms=mwa_ms, mask_autocorr=mask_autocorr, sign_convention=sign_convention)
+        return nfi_gen_mf(self.ms_file, self.data_avg, self.ant1_ids, self.ant2_ids, self.freq_list, N_pix=N_pix, dm=dm, offset=offset, stokes=stokes, channels=channels, z_list=z_list, array_loc=array_loc, sim_ateam=sim_ateam, mwa_ms=mwa_ms, mask_autocorr=mask_autocorr, sign_convention=sign_convention, timerange=self.timerange)
 
 class nfi_gen_mf:
     """
@@ -110,8 +110,9 @@ class nfi_gen_mf:
     mask_autocorr (bool): Whether to mask autocorrelations.
     """
 
-    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False, sign_convention=1):
+    def __init__(self, ms_file, data_avg, ant1_ids, ant2_ids, freq_list, N_pix, dm, offset, stokes, channels='all', z_list=None, array_loc=[2.192400, 47.376511, 150], sim_ateam=None, mwa_ms=False, mask_autocorr=False, sign_convention=1, timerange='full'):
         self.ms_file = ms_file
+        self.timerange = timerange
         if isinstance(channels, str) and channels=='all':
             self.channels = np.arange(len(freq_list))
         else:
@@ -238,7 +239,11 @@ class nfi_gen_mf:
     
     def make_image_ateam(self):
         t = ct.table(self.ms_file, readonly=True)
-        time = atime.Time(np.average(t.getcol('TIME')) / 3600. / 24., format='mjd')
+        times = np.unique(t.getcol('TIME'))
+        t.close()
+        if self.timerange != 'full':
+            times = times[self.timerange[0]:self.timerange[1]]
+        time = atime.Time(np.mean(times) / 3600. / 24., format='mjd')
         nenufar_location = EarthLocation(lat=self.array_loc[1] * u.deg, lon=self.array_loc[0] * u.deg, height=self.array_loc[2] * u.m)
         source_coords = [SkyCoord.from_name(i) if isinstance(i, str) else i for i in self.sim_ateam]
         img_ateam = []
