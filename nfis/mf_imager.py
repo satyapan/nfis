@@ -19,15 +19,19 @@ class ms_data_mf:
     ms_file (str or list): Path to ms, or list of multiple paths.
     data_col (str): Data column to use  
     timerange (str or tuple): 'full' or tuple of two integers corresponding to start and end times 
+    include_flags (bool): Whether to include flag data
     """
 
-    def __init__(self, ms_file, data_col='DATA', timerange='full', retain_data=False):
+    def __init__(self, ms_file, data_col='DATA', timerange='full', retain_data=False, include_flags=False):
         self.ms_file = ms_file
         self.data_col = data_col
         self.timerange = timerange
+        self.include_flags = include_flags
         if type(ms_file) != list:
             t = ct.table(ms_file, readonly=True)
             self.data = t.getcol(self.data_col)
+            if self.include_flags:
+                self.data = np.where(t.getcol('FLAG'), np.nan, self.data)
             self.ant1 = t.getcol('ANTENNA1')
             self.ant2 = t.getcol('ANTENNA2')
             self.uvw = t.getcol('UVW')
@@ -51,6 +55,8 @@ class ms_data_mf:
                 ms = ms_file[i]
                 t = ct.table(ms, readonly=True)
                 data = t.getcol(self.data_col)
+                if self.include_flags:
+                    data = np.where(t.getcol('FLAG'), np.nan, data)
                 data_list.append(data)
                 uvw = t.getcol('UVW')
                 uvw_list.append(uvw)
@@ -73,7 +79,7 @@ class ms_data_mf:
                 t.close()
             self.data = np.concatenate(data_list, axis=0)
             self.uvw = np.concatenate(uvw_list, axis=0)
-            self.data_avg = np.average(data_avg_list, axis=0)
+            self.data_avg = np.nanmean(data_avg_list, axis=0)
             self.shape = self.data.shape
             self.N_t = int(self.shape[0]/self.N_bl)
         if retain_data == False:
@@ -234,7 +240,7 @@ class nfi_gen_mf:
             img = ne.evaluate('img + h')
             bar.update(1)
         img = img/self.N_ch
-        corr_blavg = np.average(abs(img), axis=0)
+        corr_blavg = np.nanmean(abs(img), axis=0)
         return corr_blavg
     
     def make_image_ateam(self):
@@ -267,7 +273,7 @@ class nfi_gen_mf:
                     bar.update(1)
                 bar.close()
                 img = img/self.N_ch
-                img_ateam.append(np.average(abs(img), axis=0))
+                img_ateam.append(np.nanmean(abs(img), axis=0))
         self.sim_ateam = sim_ateam_abovehor
         return img_ateam
 
